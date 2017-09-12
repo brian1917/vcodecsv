@@ -11,7 +11,7 @@ Creates a CSV file with all open flaws for an account. The default includes poli
 2.  **-password**: Veracode password.
 3. **-nonpv**: Will include non-policy violating flaws.
 4. **-mitigated**: Will include flaws with accepted mitigations.
-5. **-staticOnly**: Will only export flaws from static scans.
-6. **-dynamicOnly**: Will only export flaws from dynamic scans.
+5. **-static**: Will only export flaws from static scans.
+6. **-dynamic**: Will only export flaws from dynamic scans.
 
 **Note**: Setting _-staticOnly_ and _-dynamicOnly_ flags will export all flaws excluding those from MPT.
