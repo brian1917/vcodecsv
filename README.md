@@ -14,4 +14,4 @@ Creates a CSV file with all open flaws for an account. The default includes poli
 5. **-static**: Will only export flaws from static scans.
 6. **-dynamic**: Will only export flaws from dynamic scans.
 
-**Note**: Setting _-staticOnly_ and _-dynamicOnly_ flags will export all flaws excluding those from MPT.
+**Note**: Setting _-static_ and _-dynamic_ flags will export all flaws excluding those from MPT.
