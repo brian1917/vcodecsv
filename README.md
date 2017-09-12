@@ -3,6 +3,9 @@
 ## Description
 Creates a CSV file with all open flaws for an account. The default includes policy-violating, non-mitigated flaws for all scan types. Flags can be used to override.
 
+## Third-party Packages
+1. github.com/brian1917/vcodeapi
+
 ## Parameters
 1.  **-user**: Veracode username.
 2.  **-password**: Veracode password.
