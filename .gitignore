@@ -2,4 +2,4 @@
 *.csv
 *.xsml
 *.log
-vcodecsv
+.DS_Store
