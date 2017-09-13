@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 //DECLARE VARIABLES
 var veracodeUser, veracodePwd string
-var inclNonPV, inclMitigated, staticOnly, dynamicOnly bool
+var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var results_file *os.File
-var err error
 var appSkip bool
 
 func init() {
@@ -22,6 +22,7 @@ func init() {
 	flag.BoolVar(&inclMitigated, "mitigated", false, "Includes mitigated flaws")
 	flag.BoolVar(&staticOnly, "static", false, "Only exports static flaws")
 	flag.BoolVar(&dynamicOnly, "dynamic", false, "Only exports dynamic flaws")
+	flag.BoolVar(&inclDesc, "desc", false, "Includes detailed flaw descriptions (larger file size)")
 }
 
 func main() {
@@ -41,17 +42,17 @@ func main() {
 	// PARSE FLAGS
 	flag.Parse()
 
-	// CREATE A CSV FILE FOR RESULTS
-	if results_file, err = os.Create("all_veracode_flaws.csv"); err != nil {
-		log.Fatal(err)
-	}
-	defer results_file.Close()
-
 	// GET THE APP LIST
 	appList, err := GetAppList(veracodeUser, veracodePwd)
 	if err != nil {
-		println(err)
+		log.Fatal(err)
 	}
+
+	// CREATE A CSV FILE FOR RESULTS
+	if results_file, err = os.Create("allVeracodeFlaws" + time.Now().Format("20060102150405") + ".csv"); err != nil {
+		log.Fatal(err)
+	}
+	defer results_file.Close()
 
 	// Create the writer
 	writer := csv.NewWriter(results_file)
@@ -59,7 +60,10 @@ func main() {
 
 	// Write the headers
 	headers := []string{"app_id", "build_id", "issueid", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
-		"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line", "description"}
+		"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
+	if inclDesc == true {
+		headers = append(headers, "description")
+	}
 	if err = writer.Write(headers); err != nil {
 		log.Fatal(err)
 	}
@@ -130,7 +134,9 @@ func main() {
 				entry := []string{app, recent_build, f.Issueid, f.Cweid, f.Remediation_status, f.Mitigation_status,
 					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module,
 					f.Sourcefile, f.Line}
-
+				if inclDesc == true {
+					entry = append(entry, f.Description)
+				}
 				err := writer.Write(entry)
 				if err != nil {
 					fmt.Println(err)
