@@ -15,3 +15,8 @@ Creates a CSV file with all open flaws for an account. The default includes poli
 6. **-dynamic**: Will only export flaws from dynamic scans.
 
 **Note**: Setting _-static_ and _-dynamic_ flags will export all flaws excluding those from MPT.
+
+## Executables
+I've added the executables for Mac (vcodecsv) and Windows (vcodecsv.exe) for access to those without Go Installed.
+For Windows, users just download the EXE and from the command line run *_vcodexsv.exe --help_*.
+For Mac, download the executable, set it to be an executable: *_chmod +x vcodecsv_* and then run *_./vcodecsv --help_*
