@@ -17,6 +17,6 @@ Creates a CSV file with all open flaws for an account. The default includes poli
 **Note**: Setting _-static_ and _-dynamic_ flags will export all flaws excluding those from MPT.
 
 ## Executables
-I've added the executables for Mac (vcodecsv) and Windows (vcodecsv.exe) for access to those without Go Installed.
-For Windows, users just download the EXE and from the command line run *_vcodexsv.exe --help_*.
-For Mac, download the executable, set it to be an executable: *_chmod +x vcodecsv_* and then run *_./vcodecsv --help_*
+I've added the executables for Mac (vcodecsv) and Windows (vcodecsv.exe). Building from source is preffered, but I'll try to keep these up-to-date for those that don't have Go installed.
+*For Windows, users just download the EXE and from the command line run *_vcodexsv.exe --help_*.
+*For Mac, download the executable, set it to be an executable: *_chmod +x vcodecsv_* and then run *_./vcodecsv --help_*
