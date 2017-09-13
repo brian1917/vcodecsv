@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"github.com/brian1917/vcodeapi"
+	"log"
 )
 
 type App struct {
@@ -11,9 +13,14 @@ type App struct {
 	AppName string `xml:"app_name,attr"`
 }
 
-func GetAppList(username, password string) []string {
+func GetAppList(username, password string) ([]string, error) {
 	var appIDs []string
-	appListAPI := vcodeapi.AppList(username, password)
+	var errMsg error = nil
+
+	appListAPI, err := vcodeapi.AppList(username, password)
+	if err!= nil{
+		log.Fatal(err)
+	}
 	decoder := xml.NewDecoder(bytes.NewReader(appListAPI))
 	for {
 		// Read tokens from the XML document in a stream.
@@ -31,7 +38,10 @@ func GetAppList(username, password string) []string {
 				decoder.DecodeElement(&app, &se)
 				appIDs = append(appIDs, app.AppID)
 			}
+			if se.Name.Local == "error" {
+				err = errors.New("api for GetAppList returned with an error element")
+			}
 		}
 	}
-	return appIDs
+	return appIDs, errMsg
 }

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"github.com/brian1917/vcodeapi"
+	"log"
+	"errors"
 )
 
 type Flaw struct {
@@ -21,10 +23,14 @@ type Flaw struct {
 	Description               string `xml:"description,attr"`
 }
 
-func GetDetailedreport(username, password, build_id string) ([]Flaw, bool) {
+func GetDetailedReport(username, password, build_id string) ([]Flaw, error) {
 	var flaws []Flaw
-	error_condition := false
-	detailedReportAPI := vcodeapi.DetailedReport(username, password, build_id)
+	var errMsg error = nil
+
+	detailedReportAPI, err := vcodeapi.DetailedReport(username, password, build_id)
+	if err!=nil{
+		log.Fatal(err)
+	}
 	decoder := xml.NewDecoder(bytes.NewReader(detailedReportAPI))
 	for {
 		// Read tokens from the XML document in a stream.
@@ -43,10 +49,10 @@ func GetDetailedreport(username, password, build_id string) ([]Flaw, bool) {
 				flaws = append(flaws, flaw)
 			}
 			if se.Name.Local == "error" {
-				error_condition = true
+				err = errors.New("api for GetDetailedReport returned with an error element")
 			}
 		}
 	}
-	return flaws, error_condition
+	return flaws, errMsg
 
 }

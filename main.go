@@ -4,8 +4,25 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 )
+
+//DECLARE VARIABLES
+var veracodeUser, veracodePwd string
+var inclNonPV, inclMitigated, staticOnly, dynamicOnly bool
+var results_file *os.File
+var err error
+var appSkip bool
+
+func init() {
+	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
+	flag.StringVar(&veracodePwd, "password", "", "Veracode password")
+	flag.BoolVar(&inclNonPV, "nonpv", false, "Includes only non-policy-violating flaws")
+	flag.BoolVar(&inclMitigated, "mitigated", false, "Includes mitigated flaws")
+	flag.BoolVar(&staticOnly, "static", false, "Only exports static flaws")
+	flag.BoolVar(&dynamicOnly, "dynamic", false, "Only exports dynamic flaws")
+}
 
 func main() {
 	/*
@@ -21,28 +38,20 @@ func main() {
 		- - - 4TH BUILD WILL HAVE RESULTS. IF ERROR HERE, NO RESULTS AVAILABLE FOR APP
 	*/
 
-	// DECLARE SOME VARIABLES
-	var results_file *os.File
-	var err error
-	var appSkip bool
-
-	// GET SOME USER INPUT
-	veracodeUser := flag.String("user", "", "Veracode username")
-	veracodePwd := flag.String("password", "", "Veracode password")
-	inclNonPV := flag.Bool("nonpv", false, "Includes only non-policy-violating flaws")
-	inclMitigated := flag.Bool("mitigated", false, "Includes mitigated flaws")
-	staticOnly := flag.Bool("static", false, "Only exports static flaws")
-	dynamicOnly := flag.Bool("dynamic", false, "Only exports dynamic flaws")
+	// PARSE FLAGS
 	flag.Parse()
 
 	// CREATE A CSV FILE FOR RESULTS
 	if results_file, err = os.Create("all_veracode_flaws.csv"); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	defer results_file.Close()
 
 	// GET THE APP LIST
-	appList := GetAppList(*veracodeUser, *veracodePwd)
+	appList, err := GetAppList(veracodeUser, veracodePwd)
+	if err != nil {
+		println(err)
+	}
 
 	// Create the writer
 	writer := csv.NewWriter(results_file)
@@ -52,7 +61,7 @@ func main() {
 	headers := []string{"app_id", "build_id", "issueid", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
 		"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line", "description"}
 	if err = writer.Write(headers); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
 	// CYCLE THROUGH EACH APP AND GET THE BUILD LIST
@@ -60,7 +69,11 @@ func main() {
 		// RESET appSkip TO FALSE
 		appSkip = false
 		fmt.Printf("Processing App ID: %v\n", app)
-		buildList := GetBuildList(*veracodeUser, *veracodePwd, app)
+		buildList,err := GetBuildList(veracodeUser, veracodePwd, app)
+
+		if err !=nil{
+			log.Fatal(err)
+		}
 
 		// GET FOUR MOST RECENT BUILD IDS
 		if len(buildList) == 0 {
@@ -68,24 +81,24 @@ func main() {
 		}
 
 		//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-		detailedResults, error_check := GetDetailedreport(*veracodeUser, *veracodePwd, buildList[len(buildList)-1])
+		detailedResults, error_check := GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
 		recent_build := buildList[len(buildList)-1]
 
 		//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS).
-		if len(buildList) > 1 && error_check == true {
-			detailedResults, error_check = GetDetailedreport(*veracodeUser, *veracodePwd, buildList[len(buildList)-2])
+		if len(buildList) > 1 && error_check != nil {
+			detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
 			recent_build = buildList[len(buildList)-2]
 
-			if len(buildList) > 2 && error_check == true {
-				detailedResults, error_check = GetDetailedreport(*veracodeUser, *veracodePwd, buildList[len(buildList)-3])
+			if len(buildList) > 2 && error_check != nil {
+				detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
 				recent_build = buildList[len(buildList)-3]
 
-				if len(buildList) > 3 && error_check == true {
-					detailedResults, error_check = GetDetailedreport(*veracodeUser, *veracodePwd, buildList[len(buildList)-4])
+				if len(buildList) > 3 && error_check != nil {
+					detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
 					recent_build = buildList[len(buildList)-4]
 
 					// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
-					if error_check == true {
+					if error_check != nil {
 						appSkip = true
 					}
 				}
@@ -100,16 +113,16 @@ func main() {
 				if f.Remediation_status == "Fixed" {
 					continue
 				}
-				if *inclNonPV == false && f.Affects_policy_compliance == "false" {
+				if inclNonPV == false && f.Affects_policy_compliance == "false" {
 					continue
 				}
-				if *inclMitigated == false && f.Mitigation_status == "accepted" {
+				if inclMitigated == false && f.Mitigation_status == "accepted" {
 					continue
 				}
-				if *staticOnly == true && f.Module == "dynamic_analysis" {
+				if staticOnly == true && f.Module == "dynamic_analysis" {
 					continue
 				}
-				if *dynamicOnly == true && f.Module != "dynamic_analysis" {
+				if dynamicOnly == true && f.Module != "dynamic_analysis" {
 					continue
 				}
 

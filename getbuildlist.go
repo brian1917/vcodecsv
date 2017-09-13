@@ -4,15 +4,22 @@ import (
 	"bytes"
 	"encoding/xml"
 	"github.com/brian1917/vcodeapi"
+	"log"
+	"errors"
 )
 
 type Build struct {
 	BuildID string `xml:"build_id,attr"`
 }
 
-func GetBuildList(username, password, app_id string) []string {
+func GetBuildList(username, password, app_id string) ([]string,error) {
 	var buildIDs []string
-	buildListAPI := vcodeapi.BuildList(username, password, app_id)
+	var errMsg error = nil
+
+	buildListAPI, err := vcodeapi.BuildList(username, password, app_id)
+	if err!=nil{
+		log.Fatal(err)
+	}
 	decoder := xml.NewDecoder(bytes.NewReader(buildListAPI))
 	for {
 		// Read tokens from the XML document in a stream.
@@ -30,7 +37,10 @@ func GetBuildList(username, password, app_id string) []string {
 				decoder.DecodeElement(&build, &se)
 				buildIDs = append(buildIDs, build.BuildID)
 			}
+			if se.Name.Local == "error" {
+				errMsg = errors.New("api for GetBuildList returned with an error element")
+			}
 		}
 	}
-	return buildIDs
+	return buildIDs, errMsg
 }
