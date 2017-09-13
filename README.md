@@ -13,6 +13,7 @@ Creates a CSV file with all open flaws for an account. The default includes poli
 4. **-mitigated**: Will include flaws with accepted mitigations.
 5. **-static**: Will only export flaws from static scans.
 6. **-dynamic**: Will only export flaws from dynamic scans.
+7. **-desc**: Will include the detailed description of the flaw (increases file size).
 
 **Note**: Setting _-static_ and _-dynamic_ flags will export all flaws excluding those from MPT.
 
