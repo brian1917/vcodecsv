@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// CYCLE THROUGH EACH APP AND GET THE BUILD LIST
-	appCounter :=0
+	appCounter := 0
 	for _, app := range appList {
 		appCounter += 1
 		// RESET appSkip TO FALSE
@@ -124,22 +124,13 @@ func main() {
 
 			// GET CUSTOM FIELD 1
 
-
 			for _, f := range detailedResults {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
-				if f.Remediation_status == "Fixed" {
-					continue
-				}
-				if inclNonPV == false && f.Affects_policy_compliance == "false" {
-					continue
-				}
-				if inclMitigated == false && f.Mitigation_status == "accepted" {
-					continue
-				}
-				if staticOnly == true && f.Module == "dynamic_analysis" {
-					continue
-				}
-				if dynamicOnly == true && f.Module != "dynamic_analysis" {
+				if f.Remediation_status == "Fixed" ||
+					(inclNonPV == false && f.Affects_policy_compliance == "false") ||
+					(inclMitigated == false && f.Mitigation_status == "accepted") ||
+					(staticOnly == true && f.Module == "dynamic_analysis") ||
+					(dynamicOnly == true && f.Module != "dynamic_analysis") {
 					continue
 				}
 
