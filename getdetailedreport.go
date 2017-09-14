@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"github.com/brian1917/vcodeapi"
 	"log"
-	"errors"
 )
 
 type Flaw struct {
@@ -23,12 +23,18 @@ type Flaw struct {
 	Description               string `xml:"description,attr"`
 }
 
-func GetDetailedReport(username, password, build_id string) ([]Flaw, error) {
+type CustomField struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
+}
+
+func GetDetailedReport(username, password, build_id string) ([]Flaw, []CustomField, error) {
 	var flaws []Flaw
+	var customFields []CustomField
 	var errMsg error = nil
 
 	detailedReportAPI, err := vcodeapi.DetailedReport(username, password, build_id)
-	if err!=nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 	decoder := xml.NewDecoder(bytes.NewReader(detailedReportAPI))
@@ -43,16 +49,21 @@ func GetDetailedReport(username, password, build_id string) ([]Flaw, error) {
 		switch se := t.(type) {
 		case xml.StartElement:
 			// Read StartElement and check for flaw
+			if se.Name.Local == "error" {
+				errMsg = errors.New("api for GetDetailedReport returned with an error element")
+			}
 			if se.Name.Local == "flaw" {
 				var flaw Flaw
 				decoder.DecodeElement(&flaw, &se)
 				flaws = append(flaws, flaw)
 			}
-			if se.Name.Local == "error" {
-				errMsg = errors.New("api for GetDetailedReport returned with an error element")
+			if se.Name.Local == "customfield" {
+				var cField CustomField
+				decoder.DecodeElement(&cField, &se)
+				customFields = append(customFields, cField)
 			}
 		}
 	}
-	return flaws, errMsg
+	return flaws, customFields, errMsg
 
 }

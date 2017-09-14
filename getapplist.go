@@ -13,8 +13,8 @@ type App struct {
 	AppName string `xml:"app_name,attr"`
 }
 
-func GetAppList(username, password string) ([]string, error) {
-	var appIDs []string
+func GetAppList(username, password string) ([]App, error) {
+	var apps []App
 	var errMsg error = nil
 
 	appListAPI, err := vcodeapi.AppList(username, password)
@@ -36,12 +36,12 @@ func GetAppList(username, password string) ([]string, error) {
 			if se.Name.Local == "app" {
 				var app App
 				decoder.DecodeElement(&app, &se)
-				appIDs = append(appIDs, app.AppID)
+				apps = append(apps, app)
 			}
 			if se.Name.Local == "error" {
 				errMsg = errors.New("api for GetAppList returned with an error element")
 			}
 		}
 	}
-	return appIDs, errMsg
+	return apps, errMsg
 }

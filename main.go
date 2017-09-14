@@ -10,12 +10,15 @@ import (
 )
 
 //DECLARE VARIABLES
-var veracodeUser, veracodePwd, recent_build string
+var veracodeUser, veracodePwd, recentBuild string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
-var results_file *os.File
+var resultsFile *os.File
 var appSkip bool
 var detailedResults []Flaw
-var error_check error
+var appCustomFields []CustomField
+var errorCheck error
+var err error
+var appList []App
 
 func init() {
 	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
@@ -45,23 +48,23 @@ func main() {
 	flag.Parse()
 
 	// GET THE APP LIST
-	appList, err := GetAppList(veracodeUser, veracodePwd)
+	appList, err = GetAppList(veracodeUser, veracodePwd)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// CREATE A CSV FILE FOR RESULTS
-	if results_file, err = os.Create("allVeracodeFlaws" + time.Now().Format("20060102150405") + ".csv"); err != nil {
+	if resultsFile, err = os.Create("allVeracodeFlaws" + time.Now().Format("20060102150405") + ".csv"); err != nil {
 		log.Fatal(err)
 	}
-	defer results_file.Close()
+	defer resultsFile.Close()
 
 	// Create the writer
-	writer := csv.NewWriter(results_file)
+	writer := csv.NewWriter(resultsFile)
 	defer writer.Flush()
 
 	// Write the headers
-	headers := []string{"app_id", "build_id", "issueid", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
+	headers := []string{"custom_field1", "app_name", "app_id", "build_id", "issueid", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
 		"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
 	if inclDesc == true {
 		headers = append(headers, "description")
@@ -76,8 +79,8 @@ func main() {
 		appCounter += 1
 		// RESET appSkip TO FALSE
 		appSkip = false
-		fmt.Printf("Processing App ID: %v (%v of %v)\n", app, appCounter, len(appList))
-		buildList, err := GetBuildList(veracodeUser, veracodePwd, app)
+		fmt.Printf("Processing App ID %v: %v (%v of %v)\n", app.AppID, app.AppName, appCounter, len(appList))
+		buildList, err := GetBuildList(veracodeUser, veracodePwd, app.AppID)
 
 		if err != nil {
 			log.Fatal(err)
@@ -87,28 +90,28 @@ func main() {
 		if len(buildList) == 0 {
 			appSkip = true
 			detailedResults = nil
-			recent_build = ""
+			recentBuild = ""
 		} else {
 
 			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-			detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
-			recent_build = buildList[len(buildList)-1]
+			detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
+			recentBuild = buildList[len(buildList)-1]
 
 			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS).
-			if len(buildList) > 1 && error_check != nil {
-				detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
-				recent_build = buildList[len(buildList)-2]
+			if len(buildList) > 1 && errorCheck != nil {
+				detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
+				recentBuild = buildList[len(buildList)-2]
 
-				if len(buildList) > 2 && error_check != nil {
-					detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
-					recent_build = buildList[len(buildList)-3]
+				if len(buildList) > 2 && errorCheck != nil {
+					detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
+					recentBuild = buildList[len(buildList)-3]
 
-					if len(buildList) > 3 && error_check != nil {
-						detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
-						recent_build = buildList[len(buildList)-4]
+					if len(buildList) > 3 && errorCheck != nil {
+						detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
+						recentBuild = buildList[len(buildList)-4]
 
 						// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
-						if error_check != nil {
+						if errorCheck != nil {
 							appSkip = true
 						}
 					}
@@ -118,6 +121,9 @@ func main() {
 
 		//PRINT THE DETAILED RESULTS TO CSV
 		if appSkip == false {
+
+			// GET CUSTOM FIELD 1
+
 
 			for _, f := range detailedResults {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
@@ -138,7 +144,7 @@ func main() {
 				}
 
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app, recent_build, f.Issueid, f.Cweid, f.Remediation_status, f.Mitigation_status,
+				entry := []string{appCustomFields[0].Value, app.AppName, app.AppID, recentBuild, f.Issueid, f.Cweid, f.Remediation_status, f.Mitigation_status,
 					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module,
 					f.Sourcefile, f.Line}
 				if inclDesc == true {
