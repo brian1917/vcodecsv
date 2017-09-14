@@ -54,7 +54,7 @@ func main() {
 	}
 
 	// CREATE A CSV FILE FOR RESULTS
-	if resultsFile, err = os.Create("allVeracodeFlaws" + time.Now().Format("20060102150405") + ".csv"); err != nil {
+	if resultsFile, err = os.Create("allVeracodeFlaws_" + time.Now().Format("2006-01-02-15-04-05") + ".csv"); err != nil {
 		log.Fatal(err)
 	}
 	defer resultsFile.Close()
