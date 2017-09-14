@@ -10,10 +10,12 @@ import (
 )
 
 //DECLARE VARIABLES
-var veracodeUser, veracodePwd string
+var veracodeUser, veracodePwd, recent_build string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var results_file *os.File
 var appSkip bool
+var detailedResults []Flaw
+var error_check error
 
 func init() {
 	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
@@ -69,41 +71,46 @@ func main() {
 	}
 
 	// CYCLE THROUGH EACH APP AND GET THE BUILD LIST
+	appCounter :=0
 	for _, app := range appList {
+		appCounter += 1
 		// RESET appSkip TO FALSE
 		appSkip = false
-		fmt.Printf("Processing App ID: %v\n", app)
-		buildList,err := GetBuildList(veracodeUser, veracodePwd, app)
+		fmt.Printf("Processing App ID: %v (%v of %v)\n", app, appCounter, len(appList))
+		buildList, err := GetBuildList(veracodeUser, veracodePwd, app)
 
-		if err !=nil{
+		if err != nil {
 			log.Fatal(err)
 		}
 
 		// GET FOUR MOST RECENT BUILD IDS
 		if len(buildList) == 0 {
 			appSkip = true
-		}
+			detailedResults = nil
+			recent_build = ""
+		} else {
 
-		//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-		detailedResults, error_check := GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
-		recent_build := buildList[len(buildList)-1]
+			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
+			detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
+			recent_build = buildList[len(buildList)-1]
 
-		//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS).
-		if len(buildList) > 1 && error_check != nil {
-			detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
-			recent_build = buildList[len(buildList)-2]
+			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS).
+			if len(buildList) > 1 && error_check != nil {
+				detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
+				recent_build = buildList[len(buildList)-2]
 
-			if len(buildList) > 2 && error_check != nil {
-				detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
-				recent_build = buildList[len(buildList)-3]
+				if len(buildList) > 2 && error_check != nil {
+					detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
+					recent_build = buildList[len(buildList)-3]
 
-				if len(buildList) > 3 && error_check != nil {
-					detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
-					recent_build = buildList[len(buildList)-4]
+					if len(buildList) > 3 && error_check != nil {
+						detailedResults, error_check = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
+						recent_build = buildList[len(buildList)-4]
 
-					// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
-					if error_check != nil {
-						appSkip = true
+						// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
+						if error_check != nil {
+							appSkip = true
+						}
 					}
 				}
 			}

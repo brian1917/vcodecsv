@@ -49,7 +49,7 @@ func GetDetailedReport(username, password, build_id string) ([]Flaw, error) {
 				flaws = append(flaws, flaw)
 			}
 			if se.Name.Local == "error" {
-				err = errors.New("api for GetDetailedReport returned with an error element")
+				errMsg = errors.New("api for GetDetailedReport returned with an error element")
 			}
 		}
 	}

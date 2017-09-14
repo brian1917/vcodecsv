@@ -39,7 +39,7 @@ func GetAppList(username, password string) ([]string, error) {
 				appIDs = append(appIDs, app.AppID)
 			}
 			if se.Name.Local == "error" {
-				err = errors.New("api for GetAppList returned with an error element")
+				errMsg = errors.New("api for GetAppList returned with an error element")
 			}
 		}
 	}
