@@ -10,7 +10,7 @@ import (
 )
 
 //DECLARE VARIABLES
-var veracodeUser, veracodePwd, recentBuild string
+var veracodeUser, veracodePwd, recentBuild, scanType string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var resultsFile *os.File
 var appSkip bool
@@ -63,18 +63,9 @@ func main() {
 	writer := csv.NewWriter(resultsFile)
 	defer writer.Flush()
 
-	// Write the headers
-	headers := []string{"custom_field1", "app_name", "app_id", "build_id", "issueid", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
-		"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
-	if inclDesc == true {
-		headers = append(headers, "description")
-	}
-	if err = writer.Write(headers); err != nil {
-		log.Fatal(err)
-	}
-
 	// CYCLE THROUGH EACH APP AND GET THE BUILD LIST
 	appCounter := 0
+	appWithFlawsCounter := 0
 	for _, app := range appList {
 		appCounter += 1
 		// RESET appSkip TO FALSE
@@ -97,32 +88,37 @@ func main() {
 			detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
 			recentBuild = buildList[len(buildList)-1]
 
-			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS).
-			if len(buildList) > 1 && errorCheck != nil {
-				detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-2])
-				recentBuild = buildList[len(buildList)-2]
-
-				if len(buildList) > 2 && errorCheck != nil {
-					detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-3])
-					recentBuild = buildList[len(buildList)-3]
-
-					if len(buildList) > 3 && errorCheck != nil {
-						detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-4])
-						recentBuild = buildList[len(buildList)-4]
-
-						// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
-						if errorCheck != nil {
-							appSkip = true
-						}
-					}
+			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS)
+			for i := 1; i < 4; i++ {
+				if len(buildList) > i && errorCheck != nil {
+					detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)])
+					recentBuild = buildList[len(buildList)-(i+1)]
 				}
 			}
+
+			// IF 4 MOST RECENT BUILDS HAVE ERRORS, THERE ARE NO RESULTS AVAILABLE
+			if errorCheck != nil {
+				appSkip = true
+			}
+
 		}
 
 		//PRINT THE DETAILED RESULTS TO CSV
 		if appSkip == false {
+			appWithFlawsCounter += 1
 
-			// GET CUSTOM FIELD 1
+			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
+			if appWithFlawsCounter == 1 {
+				headers := []string{"app_name", "app_id", "build_id", "issueid", "analysis_type", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
+					"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line", appCustomFields[0].Name}
+				if inclDesc == true {
+					headers = append(headers, "description")
+				}
+				if err = writer.Write(headers); err != nil {
+					log.Fatal(err)
+				}
+
+			}
 
 			for _, f := range detailedResults {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
@@ -134,10 +130,19 @@ func main() {
 					continue
 				}
 
+				// DETERMINE SCAN TYPE
+				if f.Module == "dynamic_analysis" {
+					scanType = "dynamic"
+				} else if f.Module == "manual_analysis" {
+					scanType = "manual"
+				} else {
+					scanType = "static"
+				}
+
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{appCustomFields[0].Value, app.AppName, app.AppID, recentBuild, f.Issueid, f.Cweid, f.Remediation_status, f.Mitigation_status,
+				entry := []string{app.AppName, app.AppID, recentBuild, f.Issueid, scanType, f.Cweid, f.Remediation_status, f.Mitigation_status,
 					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module,
-					f.Sourcefile, f.Line}
+					f.Sourcefile, f.Line, appCustomFields[0].Value}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
 				}
