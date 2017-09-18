@@ -44,6 +44,8 @@ func main() {
 		- - - 4TH BUILD WILL HAVE RESULTS. IF ERROR HERE, NO RESULTS AVAILABLE FOR APP
 	*/
 
+	start := time.Now()
+
 	// PARSE FLAGS
 	flag.Parse()
 
@@ -54,7 +56,7 @@ func main() {
 	}
 
 	// CREATE A CSV FILE FOR RESULTS
-	if resultsFile, err = os.Create("allVeracodeFlaws_" + time.Now().Format("2006-01-02-15-04-05") + ".csv"); err != nil {
+	if resultsFile, err = os.Create("allVeracodeFlaws_" + time.Now().Format("20060102_150405") + ".csv"); err != nil {
 		log.Fatal(err)
 	}
 	defer resultsFile.Close()
@@ -109,8 +111,8 @@ func main() {
 
 			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
 			if appWithFlawsCounter == 1 {
-				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "issueid", "analysis_type", "cweid", "remediation_status", "mitigation_status", "affects_policy_compliance",
-					"date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
+				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "uniqueID", "issueid", "analysis_type", "cweid", "remediation_status",
+					"mitigation_status", "affects_policy_compliance", "date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
 				if inclDesc == true {
 					headers = append(headers, "description")
 				}
@@ -139,8 +141,11 @@ func main() {
 					scanType = "static"
 				}
 
+				//CREATE A UNIQUE FLAW ID
+				uniqueFlawID := app.AppID + "-" + f.Issueid
+
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, f.Issueid, scanType, f.Cweid, f.Remediation_status, f.Mitigation_status,
+				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.Cweid, f.Remediation_status, f.Mitigation_status,
 					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
@@ -152,4 +157,7 @@ func main() {
 			}
 		}
 	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("Run time: %v \n", elapsed)
 }
