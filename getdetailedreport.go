@@ -9,18 +9,43 @@ import (
 )
 
 type Flaw struct {
-	Issueid                   string `xml:"issueid,attr"`
-	Cweid                     string `xml:"cweid,attr"`
-	Remediation_status        string `xml:"remediation_status,attr"`
-	Mitigation_status         string `xml:"mitigation_status,attr"`
-	Affects_policy_compliance string `xml:"affects_policy_compliance,attr"`
-	Date_first_occurrence     string `xml:"date_first_occurrence,attr"`
-	Severity                  string `xml:"severity,attr"`
-	ExploitLevel              string `xml:"exploitLevel,attr"`
-	Module                    string `xml:"module,attr"`
-	Sourcefile                string `xml:"sourcefile,attr"`
-	Line                      string `xml:"line,attr"`
-	Description               string `xml:"description,attr"`
+	Issueid                   string      `xml:"issueid,attr"`
+	CategoryName              string      `xml:"categoryname,attr"`
+	Cweid                     string      `xml:"cweid,attr"`
+	Remediation_status        string      `xml:"remediation_status,attr"`
+	Mitigation_status         string      `xml:"mitigation_status,attr"`
+	Affects_policy_compliance string      `xml:"affects_policy_compliance,attr"`
+	Date_first_occurrence     string      `xml:"date_first_occurrence,attr"`
+	Severity                  string      `xml:"severity,attr"`
+	ExploitLevel              string      `xml:"exploitLevel,attr"`
+	Module                    string      `xml:"module,attr"`
+	Sourcefile                string      `xml:"sourcefile,attr"`
+	Line                      string      `xml:"line,attr"`
+	Description               string      `xml:"description,attr"`
+	Mitigations               Mitigations `xml:"mitigations"`
+	Annotations               Annotations `xml:"annotations"`
+}
+
+type Mitigations struct {
+	Mitigation Mitigation `xml:"mitigation"`
+}
+
+type Mitigation struct {
+	Action      string `xml:"action,attr"`
+	Description string `xml:"description,attr"`
+	User        string `xml:"user,attr"`
+	Date        string `xml:"date,attr"`
+}
+
+type Annotations struct {
+	Annotation Annotation `xml:"annotation"`
+}
+
+type Annotation struct {
+	Action      string `xml:"action,attr"`
+	Description string `xml:"description,attr"`
+	User        string `xml:"user,attr"`
+	Date        string `xml:"date,attr"`
 }
 
 type CustomField struct {
@@ -48,7 +73,7 @@ func GetDetailedReport(username, password, build_id string) ([]Flaw, []CustomFie
 		// Inspect the type of the token just read
 		switch se := t.(type) {
 		case xml.StartElement:
-			// Read StartElement and check for flaw
+			// Read StartElement and check for errors, flaws, and custom field
 			if se.Name.Local == "error" {
 				errMsg = errors.New("api for GetDetailedReport returned with an error element")
 			}

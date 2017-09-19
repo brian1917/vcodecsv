@@ -111,8 +111,8 @@ func main() {
 
 			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
 			if appWithFlawsCounter == 1 {
-				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "uniqueID", "issueid", "analysis_type", "cweid", "remediation_status",
-					"mitigation_status", "affects_policy_compliance", "date_first_occurrence", "severity", "exploitLevel", "module", "sourcefile", "line"}
+				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "cwe_category", "cwe_id", "remediation_status",
+					"mitigation_status", "affects_policy_compliance", "date_first_occurrence", "severity", "exploit_level", "module", "source_file", "line"}
 				if inclDesc == true {
 					headers = append(headers, "description")
 				}
@@ -145,7 +145,7 @@ func main() {
 				uniqueFlawID := app.AppID + "-" + f.Issueid
 
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.Cweid, f.Remediation_status, f.Mitigation_status,
+				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.Cweid, f.Remediation_status, f.Mitigation_status,
 					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
