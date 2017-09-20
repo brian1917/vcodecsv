@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"github.com/brian1917/vcodeapi"
 )
 
 //DECLARE VARIABLES
@@ -14,11 +15,11 @@ var veracodeUser, veracodePwd, recentBuild, scanType string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var resultsFile *os.File
 var appSkip bool
-var detailedResults []Flaw
-var appCustomFields []CustomField
+var flaws []vcodeapi.Flaw
+var appCustomFields []vcodeapi.CustomField
 var errorCheck error
 var err error
-var appList []App
+var appList []vcodeapi.App
 
 func init() {
 	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
@@ -50,7 +51,7 @@ func main() {
 	flag.Parse()
 
 	// GET THE APP LIST
-	appList, err = GetAppList(veracodeUser, veracodePwd)
+	appList, err = vcodeapi.GetAppList(veracodeUser, veracodePwd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +74,7 @@ func main() {
 		// RESET appSkip TO FALSE
 		appSkip = false
 		fmt.Printf("Processing App ID %v: %v (%v of %v)\n", app.AppID, app.AppName, appCounter, len(appList))
-		buildList, err := GetBuildList(veracodeUser, veracodePwd, app.AppID)
+		buildList, err := vcodeapi.GetBuildList(veracodeUser, veracodePwd, app.AppID)
 
 		if err != nil {
 			log.Fatal(err)
@@ -82,18 +83,18 @@ func main() {
 		// GET FOUR MOST RECENT BUILD IDS
 		if len(buildList) == 0 {
 			appSkip = true
-			detailedResults = nil
+			flaws = nil
 			recentBuild = ""
 		} else {
 
 			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-			detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
+			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
 			recentBuild = buildList[len(buildList)-1]
 
 			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS)
 			for i := 1; i < 4; i++ {
 				if len(buildList) > i && errorCheck != nil {
-					detailedResults, appCustomFields, errorCheck = GetDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)])
+					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)])
 					recentBuild = buildList[len(buildList)-(i+1)]
 				}
 			}
@@ -122,7 +123,7 @@ func main() {
 
 			}
 
-			for _, f := range detailedResults {
+			for _, f := range flaws {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
 				if f.Remediation_status == "Fixed" ||
 					(inclNonPV == false && f.Affects_policy_compliance == "false") ||
