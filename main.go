@@ -18,8 +18,6 @@ var appSkip bool
 var flaws []vcodeapi.Flaw
 var appCustomFields []vcodeapi.CustomField
 var errorCheck error
-var err error
-var appList []vcodeapi.App
 
 func init() {
 	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
@@ -51,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	// GET THE APP LIST
-	appList, err = vcodeapi.GetAppList(veracodeUser, veracodePwd)
+	appList, err := vcodeapi.ParseAppList(veracodeUser, veracodePwd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +72,7 @@ func main() {
 		// RESET appSkip TO FALSE
 		appSkip = false
 		fmt.Printf("Processing App ID %v: %v (%v of %v)\n", app.AppID, app.AppName, appCounter, len(appList))
-		buildList, err := vcodeapi.GetBuildList(veracodeUser, veracodePwd, app.AppID)
+		buildList, err := vcodeapi.ParseBuildList(veracodeUser, veracodePwd, app.AppID)
 
 		if err != nil {
 			log.Fatal(err)
