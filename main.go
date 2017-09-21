@@ -86,14 +86,14 @@ func main() {
 		} else {
 
 			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1])
-			recentBuild = buildList[len(buildList)-1]
+			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1].BuildID)
+			recentBuild = buildList[len(buildList)-1].BuildID
 
 			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS)
 			for i := 1; i < 4; i++ {
 				if len(buildList) > i && errorCheck != nil {
-					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)])
-					recentBuild = buildList[len(buildList)-(i+1)]
+					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)].BuildID)
+					recentBuild = buildList[len(buildList)-(i+1)].BuildID
 				}
 			}
 
