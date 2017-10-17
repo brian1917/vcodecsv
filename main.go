@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"time"
+
 	"github.com/brian1917/vcodeapi"
 )
 
@@ -68,7 +69,7 @@ func main() {
 	appCounter := 0
 	appWithFlawsCounter := 0
 	for _, app := range appList {
-		appCounter += 1
+		appCounter++
 		// RESET appSkip TO FALSE
 		appSkip = false
 		fmt.Printf("Processing App ID %v: %v (%v of %v)\n", app.AppID, app.AppName, appCounter, len(appList))
@@ -106,12 +107,12 @@ func main() {
 
 		//PRINT THE DETAILED RESULTS TO CSV
 		if appSkip == false {
-			appWithFlawsCounter += 1
+			appWithFlawsCounter++
 
 			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
 			if appWithFlawsCounter == 1 {
 				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "category", "cwe_name", "cwe_id", "remediation_status",
-					"mitigation_status", "affects_policy_compliance", "date_first_occurrence", "severity", "exploit_level", "module", "source_file", "line"}
+					"mitigation_status", "policy_name", "affects_policy_compliance", "date_first_occurrence", "severity", "exploit_level", "module", "source_file", "line"}
 				if inclDesc == true {
 					headers = append(headers, "description")
 				}
@@ -123,9 +124,9 @@ func main() {
 
 			for _, f := range flaws {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
-				if f.Remediation_status == "Fixed" ||
-					(inclNonPV == false && f.Affects_policy_compliance == "false") ||
-					(inclMitigated == false && f.Mitigation_status == "accepted") ||
+				if f.RemediationStatus == "Fixed" ||
+					(inclNonPV == false && f.AffectsPolicyCompliance == "false") ||
+					(inclMitigated == false && f.MitigationStatus == "accepted") ||
 					(staticOnly == true && f.Module == "dynamic_analysis") ||
 					(dynamicOnly == true && f.Module != "dynamic_analysis") {
 					continue
@@ -144,8 +145,8 @@ func main() {
 				uniqueFlawID := app.AppID + "-" + f.Issueid
 
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.Remediation_status, f.Mitigation_status,
-					f.Affects_policy_compliance, f.Date_first_occurrence, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line}
+				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.RemediationStatus, f.MitigationStatus,
+					f.PolicyName, f.AffectsPolicyCompliance, f.DateFirstOccurrence, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
 				}
