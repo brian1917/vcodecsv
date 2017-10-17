@@ -12,7 +12,7 @@ import (
 )
 
 //DECLARE VARIABLES
-var veracodeUser, veracodePwd, recentBuild, scanType string
+var credsFile, recentBuild, scanType string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var resultsFile *os.File
 var appSkip bool
@@ -21,8 +21,7 @@ var appCustomFields []vcodeapi.CustomField
 var errorCheck error
 
 func init() {
-	flag.StringVar(&veracodeUser, "user", "", "Veracode username")
-	flag.StringVar(&veracodePwd, "password", "", "Veracode password")
+	flag.StringVar(&credsFile, "credsFile", "", "Credentials file path")
 	flag.BoolVar(&inclNonPV, "nonpv", false, "Includes only non-policy-violating flaws")
 	flag.BoolVar(&inclMitigated, "mitigated", false, "Includes mitigated flaws")
 	flag.BoolVar(&staticOnly, "static", false, "Only exports static flaws")
@@ -50,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	// GET THE APP LIST
-	appList, err := vcodeapi.ParseAppList(veracodeUser, veracodePwd)
+	appList, err := vcodeapi.ParseAppList(credsFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +72,7 @@ func main() {
 		// RESET appSkip TO FALSE
 		appSkip = false
 		fmt.Printf("Processing App ID %v: %v (%v of %v)\n", app.AppID, app.AppName, appCounter, len(appList))
-		buildList, err := vcodeapi.ParseBuildList(veracodeUser, veracodePwd, app.AppID)
+		buildList, err := vcodeapi.ParseBuildList(credsFile, app.AppID)
 
 		if err != nil {
 			log.Fatal(err)
@@ -87,13 +86,13 @@ func main() {
 		} else {
 
 			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-1].BuildID)
+			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-1].BuildID)
 			recentBuild = buildList[len(buildList)-1].BuildID
 
 			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS)
 			for i := 1; i < 4; i++ {
 				if len(buildList) > i && errorCheck != nil {
-					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(veracodeUser, veracodePwd, buildList[len(buildList)-(i+1)].BuildID)
+					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-(i+1)].BuildID)
 					recentBuild = buildList[len(buildList)-(i+1)].BuildID
 				}
 			}
