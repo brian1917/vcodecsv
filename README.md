@@ -27,4 +27,4 @@ veracode_api_key_secret = SECRET HERE
 ## Executables
 I've added the executables for Mac (vcodecsv) and Windows (vcodecsv.exe). Building from source is preferred, but I'll try to keep these up-to-date for those that don't have Go installed.
 * For Windows, users download the EXE and from the command line run `vcodexsv.exe --help`.
-* For Mac, download the executable, set it to be an executable: `chmod +x vcodecsv_*` and then `run *_./vcodecsv --help`
+* For Mac, download the executable, set it to be an executable: `chmod +x vcodecsv` and then `run *_./vcodecsv --help`
