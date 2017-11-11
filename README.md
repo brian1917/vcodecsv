@@ -1,4 +1,5 @@
 # Veracode All Flaws to CSV
+[![Go Report Card](https://goreportcard.com/badge/github.com/brian1917/vcodecsv)](https://goreportcard.com/report/github.com/brian1917/vcodecsv)
 
 ## Description
 Creates a CSV file with all open flaws for an account. The default includes policy-violating, non-mitigated flaws for all scan types. Flags can be used to override.
