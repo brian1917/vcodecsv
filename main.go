@@ -12,7 +12,7 @@ import (
 )
 
 //DECLARE VARIABLES
-var credsFile, recentBuild, scanType string
+var credsFile, recentBuild, scanType, outputFileName string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var resultsFile *os.File
 var appSkip bool
@@ -27,6 +27,7 @@ func init() {
 	flag.BoolVar(&staticOnly, "static", false, "Only exports static flaws")
 	flag.BoolVar(&dynamicOnly, "dynamic", false, "Only exports dynamic flaws")
 	flag.BoolVar(&inclDesc, "desc", false, "Includes detailed flaw descriptions (larger file size)")
+	flag.StringVar(&outputFileName, "outputFileName", "default", "Specific the name of the output file. Default is based on a timestamp. Providing this parameter will overwrite the file each run.")
 }
 
 func main() {
@@ -54,8 +55,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// NAME THE OUTPUT FILE
+	if outputFileName == "default" {
+		outputFileName = "allVeracodeFlaws_" + time.Now().Format("20060102_150405") + ".csv"
+	}
+
 	// CREATE A CSV FILE FOR RESULTS
-	if resultsFile, err = os.Create("allVeracodeFlaws_" + time.Now().Format("20060102_150405") + ".csv"); err != nil {
+	if resultsFile, err = os.Create(outputFileName); err != nil {
 		log.Fatal(err)
 	}
 	defer resultsFile.Close()
