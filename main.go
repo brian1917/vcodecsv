@@ -21,7 +21,7 @@ var flaws []vcodeapi.Flaw
 var appCustomFields []vcodeapi.CustomField
 var errorCheck error
 var scanTargetURL string
-var scanPublishedDate string
+var scanSubmittedDate string
 
 func init() {
 	flag.StringVar(&credsFile, "credsFile", "", "Credentials file path")
@@ -119,7 +119,7 @@ func main() {
 
 			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
 			if appWithFlawsCounter == 1 {
-				headers := []string{"unique_id", "app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "category", "cwe_name", "cwe_id", "remediation_status",
+				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "category", "cwe_name", "cwe_id", "remediation_status",
 					"mitigation_status", "policy_name", "affects_policy_compliance", "date_first_occurrence", "recent_scan_date", "severity", "exploit_level", "module", "source_file", "line", "scan_target_url", "flaw_url"}
 				if inclDesc == true {
 					headers = append(headers, "description")
@@ -135,7 +135,7 @@ func main() {
 				// RESET SOME FLAW-SPECIFIC VARIABLES
 				scanType = ""
 				scanTargetURL = ""
-				scanPublishedDate = ""
+				scanSubmittedDate = ""
 
 				if f.RemediationStatus == "Fixed" ||
 					(inclNonPV == false && f.AffectsPolicyCompliance == "false") ||
@@ -149,21 +149,21 @@ func main() {
 				if f.Module == "dynamic_analysis" {
 					scanType = "dynamic"
 					scanTargetURL = detailedReport.DynamicAnalysis.Modules.Module[0].TargetURL
-					scanPublishedDate = detailedReport.DynamicAnalysis.PublishedDate
+					scanSubmittedDate = detailedReport.DynamicAnalysis.SubmittedDate
 				} else if f.Module == "manual_analysis" {
 					scanType = "manual"
-					scanPublishedDate = detailedReport.ManualAnalysis.PublishedDate
+					scanSubmittedDate = detailedReport.ManualAnalysis.SubmittedDate
 				} else {
 					scanType = "static"
-					scanPublishedDate = detailedReport.StaticAnalysis.PublishedDate
+					scanSubmittedDate = detailedReport.StaticAnalysis.SubmittedDate
 				}
 
 				//CREATE A UNIQUE FLAW ID
 				uniqueFlawID := app.AppID + "-" + f.Issueid
 
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app.AppID + "-" + f.Issueid, app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.RemediationStatus, f.MitigationStatus,
-					f.PolicyName, f.AffectsPolicyCompliance, f.DateFirstOccurrence, scanPublishedDate, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line, scanTargetURL, f.FlawURL}
+				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.RemediationStatus, f.MitigationStatus,
+					f.PolicyName, f.AffectsPolicyCompliance, f.DateFirstOccurrence, scanSubmittedDate, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line, scanTargetURL, f.FlawURL}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
 				}
