@@ -16,9 +16,12 @@ var credsFile, recentBuild, scanType, outputFileName string
 var inclNonPV, inclMitigated, staticOnly, dynamicOnly, inclDesc bool
 var resultsFile *os.File
 var appSkip bool
+var detailedReport vcodeapi.DetReport
 var flaws []vcodeapi.Flaw
 var appCustomFields []vcodeapi.CustomField
 var errorCheck error
+var scanTargetURL string
+var scanPublishedDate string
 
 func init() {
 	flag.StringVar(&credsFile, "credsFile", "", "Credentials file path")
@@ -92,13 +95,13 @@ func main() {
 		} else {
 
 			//GET THE DETAILED RESULTS FOR MOST RECENT BUILD
-			flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-1].BuildID)
+			detailedReport, flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-1].BuildID)
 			recentBuild = buildList[len(buildList)-1].BuildID
 
 			//IF THAT BUILD HAS AN ERROR, GET THE NEXT MOST RECENT (CONTINUE FOR 4 TOTAL BUILDS)
 			for i := 1; i < 4; i++ {
 				if len(buildList) > i && errorCheck != nil {
-					flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-(i+1)].BuildID)
+					detailedReport, flaws, appCustomFields, errorCheck = vcodeapi.ParseDetailedReport(credsFile, buildList[len(buildList)-(i+1)].BuildID)
 					recentBuild = buildList[len(buildList)-(i+1)].BuildID
 				}
 			}
@@ -116,8 +119,8 @@ func main() {
 
 			// IF FIRST APP WITH FLAWS, WRITE THE HEADERS
 			if appWithFlawsCounter == 1 {
-				headers := []string{"app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "category", "cwe_name", "cwe_id", "remediation_status",
-					"mitigation_status", "policy_name", "affects_policy_compliance", "date_first_occurrence", "severity", "exploit_level", "module", "source_file", "line"}
+				headers := []string{"unique_id", "app_name", "app_id", appCustomFields[0].Name, "build_id", "unique_id", "issueid", "analysis_type", "category", "cwe_name", "cwe_id", "remediation_status",
+					"mitigation_status", "policy_name", "affects_policy_compliance", "date_first_occurrence", "recent_scan_date", "severity", "exploit_level", "module", "source_file", "line", "scan_target_url", "flaw_url"}
 				if inclDesc == true {
 					headers = append(headers, "description")
 				}
@@ -129,6 +132,11 @@ func main() {
 
 			for _, f := range flaws {
 				// LOGIC CHECKS BASED ON FIELDS AND FLAGS
+				// RESET SOME FLAW-SPECIFIC VARIABLES
+				scanType = ""
+				scanTargetURL = ""
+				scanPublishedDate = ""
+
 				if f.RemediationStatus == "Fixed" ||
 					(inclNonPV == false && f.AffectsPolicyCompliance == "false") ||
 					(inclMitigated == false && f.MitigationStatus == "accepted") ||
@@ -140,18 +148,22 @@ func main() {
 				// DETERMINE SCAN TYPE
 				if f.Module == "dynamic_analysis" {
 					scanType = "dynamic"
+					scanTargetURL = detailedReport.DynamicAnalysis.Modules.Module[0].TargetURL
+					scanPublishedDate = detailedReport.DynamicAnalysis.PublishedDate
 				} else if f.Module == "manual_analysis" {
 					scanType = "manual"
+					scanPublishedDate = detailedReport.ManualAnalysis.PublishedDate
 				} else {
 					scanType = "static"
+					scanPublishedDate = detailedReport.StaticAnalysis.PublishedDate
 				}
 
 				//CREATE A UNIQUE FLAW ID
 				uniqueFlawID := app.AppID + "-" + f.Issueid
 
 				// CREATE ARRAY AND WRITE TO CSV
-				entry := []string{app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.RemediationStatus, f.MitigationStatus,
-					f.PolicyName, f.AffectsPolicyCompliance, f.DateFirstOccurrence, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line}
+				entry := []string{app.AppID + "-" + f.Issueid, app.AppName, app.AppID, appCustomFields[0].Value, recentBuild, uniqueFlawID, f.Issueid, scanType, f.CategoryName, f.CweName, f.Cweid, f.RemediationStatus, f.MitigationStatus,
+					f.PolicyName, f.AffectsPolicyCompliance, f.DateFirstOccurrence, scanPublishedDate, f.Severity, f.ExploitLevel, f.Module, f.Sourcefile, f.Line, scanTargetURL, f.FlawURL}
 				if inclDesc == true {
 					entry = append(entry, f.Description)
 				}
