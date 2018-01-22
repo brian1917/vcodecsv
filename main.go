@@ -137,7 +137,7 @@ func main() {
 				scanTargetURL = ""
 				scanSubmittedDate = ""
 
-				if f.RemediationStatus == "Fixed" ||
+				if f.RemediationStatus == "Fixed" || f.RemediationStatus == "Cannot Reproduce" ||
 					(inclNonPV == false && f.AffectsPolicyCompliance == "false") ||
 					(inclMitigated == false && f.MitigationStatus == "accepted") ||
 					(staticOnly == true && f.Module == "dynamic_analysis") ||
